@@ -1,0 +1,77 @@
+---
+title: "Prediction Model"
+author: "Philip Gabriel Andrada"
+date: "October 12, 2016"
+output: pdf_document
+---
+
+#Preparation
+
+```{r}
+#Reading Data Files
+usuniv2012 <- read.csv("C:\\Users\\pandrada\\Desktop\\Capstone\\MERGED2012_13_PP.csv")
+usuniv2013 <- read.csv("C:\\Users\\pandrada\\Desktop\\Capstone\\MERGED2013_14_PP.csv")
+usuniv2014 <- read.csv("C:\\Users\\pandrada\\Desktop\\Capstone\\MERGED2014_15_PP.csv")
+
+#Binding All Data Files into One Data Frame
+usuniv <- rbind(usuniv2012,usuniv2013,usuniv2014)
+
+#Since there are some incomplete Carnegie Classifications, we use usuniv2014 as basis for the classification for the rest
+usuniv$CCBASIC2 <- usuniv2014$CCBASIC[match(usuniv$OPEID6,usuniv2014$OPEID6)]
+
+#Grab only the research universities (CCBASIC2 is equal to 15 or 16)
+usresearchuniv <- usuniv[usuniv$CCBASIC2 %in% c(15,16),]
+
+#Get the columns need for the study:
+# 4 - institution name
+# 19 - institution region (1-New England, 2-Mid East, 3-Great Lakes, 4-Plains, 5-Southeast, 6-Southwest, 7-Rocky Mountains, 8-Far West, 9-Outlying Areas)
+# 37-38 - admission rate
+# 39-61 - SAT and ACT Scores
+# 62-99 - percentage of degrees awarded for each field of study
+# 293-299 - total share of enrollment for different ethnicities
+# 300 - total share of enrollment that are non-resident aliens (i.e. international students)
+# 301 - total share of enrollment that have unknown race
+# 314 - share of undergraduate, degree-/certificate-seeking students who are part-time
+# 377 - average cost of attendance in an academic year institution
+# 379 - in-state tuition and fees
+# 380 - out-of-state tuition and fees
+# 387 - completion rate of first-time, full-time students at four-year institutions with 150% of expected time to completion)
+# 397-403 - completion rate for first-time, full-time students for different ethnicities
+# 404 - completion rate for first-time, full-time students for non-resident aliens
+# 405 - completion rate for first-time, full-time students that have unknown race
+# 429 - retention rate for first-time, full time studnets at four-year institutions
+# 438 - percent of all federal undergraduate students receiving a federal student loan
+# 1412 - percentage of first-generation students
+# 1740-1741 - total share of enrollment per gender
+usresearchuniv <- usresearchuniv[,c(4,19,37:99,293:301,314,377,379:380,387,397:405,429,438,1412,1740:1741)]
+
+#add a new column for a dependent variable to show that you get accepted in these universities (ACCEPTED = 1)
+usresearchuniv$ACCEPTED <- 1
+```
+
+#U.S. Research University Acceptance Model
+```{r}
+# create a training and test model using a 75%/25% from the data set 
+rm_train <- sample(nrow(usresearchuniv), floor(nrow(usresearchuniv)*0.75))
+univ_train <- usresearchuniv[rm_train,]
+univ_test <- usresearchuniv[-rm_train,]
+
+# create a formula for the US research university acceptance model
+test_formula <- formula(ACCEPTED ~ REGION + ADM_RATE_ALL + SAT_AVG_ALL + PCIP01 + PCIP03 + PCIP04 + PCIP05 + PCIP09 + PCIP10 + PCIP11 + PCIP12 + PCIP13 + PCIP14 + PCIP15 + PCIP16 + PCIP19 + PCIP22 + PCIP23 + PCIP24 + PCIP25 + PCIP26 + PCIP27 + PCIP29 + PCIP30 + PCIP31 + PCIP38 + PCIP39 + PCIP40 + PCIP41 + PCIP42 + PCIP43 + PCIP44 + PCIP45 + PCIP46 + PCIP47 + PCIP48 + PCIP49 + PCIP50 + PCIP51 + PCIP52 + PCIP54 + UGDS_WHITE + UGDS_BLACK + UGDS_HISP + UGDS_ASIAN + UGDS_AIAN + UGDS_NHPI + UGDS_2MOR + UGDS_NRA + UGDS_UNKN + COSTT4_A + PCTFLOAN +  UGDS_WOMEN)
+
+library(rpart)
+library(randomForest)
+library(caret)
+library(bigglm)
+library(Boruta)
+library(speedglm)
+test_formula2 <- formula(ACCEPTED ~ PCIP01 + PCIP03 + PCIP04 + PCIP05 + PCIP09 + PCIP10 + PCIP11 + PCIP12 + PCIP13 + PCIP14 + PCIP15 + PCIP16 + PCIP19 + PCIP22 + PCIP23 + PCIP24 + PCIP25 + PCIP26 + PCIP27 + PCIP29 + PCIP30 + PCIP31 + PCIP38 + PCIP39 + PCIP40 + PCIP41 + PCIP42 + PCIP43 + PCIP44 + PCIP45 + PCIP46 + PCIP47 + PCIP48 + PCIP49 + PCIP50 + PCIP51 + PCIP52 + PCIP54)
+
+test_formula3 <- formula(ACCEPTED ~ UGDS_WHITE + UGDS_BLACK + UGDS_HISP + UGDS_ASIAN + UGDS_AIAN + UGDS_NHPI + UGDS_2MOR + UGDS_NRA + UGDS_UNKN)
+
+#using RFE to choose columns for the percentage of degrees awarded for each field of study
+set.seed(1)
+control <- rfeControl(functions = lmFuncs, method='cv')
+subsets <- c(1:5,10,15,20,25)
+rfe.train <- rfe(univ_train[,28:65], univ_train[,94], sizes=subsets, rfeControl=control)
+```
