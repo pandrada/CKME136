@@ -1,7 +1,7 @@
 ---
 title: "US Research University Prediction Model"
 author: "Philip Gabriel Andrada"
-date: "October 27, 2016"
+date: "October 28, 2016"
 output: pdf_document
 ---
 
@@ -16,6 +16,8 @@ library(bigglm)
 library(Boruta)
 library(speedglm)
 library(ggplot2)
+library(e1071)
+library(ROCR)
 
 #Reading Data Files
 usuniv2012 <- read.csv("C:\\Users\\pandrada\\Desktop\\Capstone\\MERGED2012_13_PP.csv")
@@ -28,11 +30,13 @@ usuniv <- rbind(usuniv2012,usuniv2013,usuniv2014)
 #Since there are some incomplete Carnegie Classifications, we use usuniv2014 as basis for the classification for the rest
 usuniv$CCBASIC2 <- usuniv2014$CCBASIC[match(usuniv$OPEID6,usuniv2014$OPEID6)]
 
-#Grab only the research universities (CCBASIC2 is equal to 15 or 16)
+#added the ACCEPTED column for those that are research universities (CCBASIC2 is equal to 15 or 16), as our focus will be on these
+usuniv$ACCEPTED <- ifelse(usuniv$CCBASIC2 %in% c(15,16), 1, 0)
+
+#We will create another data frame for the research universities only
 usresearchuniv <- usuniv[usuniv$CCBASIC2 %in% c(15,16),]
 
-#Get the columns need for the study:
-# 4 - institution name
+#Create a vector with the columns that is needed from the study
 # 19 - institution region (1-New England, 2-Mid East, 3-Great Lakes, 4-Plains, 5-Southeast, 6-Southwest, 7-Rocky Mountains, 8-Far West, 9-Outlying Areas)
 # 37-38 - admission rate
 # 39-61 - SAT and ACT Scores
@@ -52,27 +56,71 @@ usresearchuniv <- usuniv[usuniv$CCBASIC2 %in% c(15,16),]
 # 438 - percent of all federal undergraduate students receiving a federal student loan
 # 1412 - percentage of first-generation students
 # 1740-1741 - total share of enrollment per gender
-usresearchuniv <- usresearchuniv[,c(4,19,37:99,293:301,314,377,379:380,387,397:405,429,438,1412,1740:1741)]
+# 1745 - acceptance flag
+col_select <- c(19,37:99,293:301,314,377,379:380,387,397:405,429,438,1412,1740:1741, 1745)
 
-#add a new column for a dependent variable to show that you get accepted in these universities (ACCEPTED = 1)
-usresearchuniv$ACCEPTED <- 1
+# Create a new data frame with the columns that will be filtered out
+usunivfilter <- usuniv[,col_select]
 
-#change the factor columns to numeric for faster processing
-usresearchuniv$C150_4 <- as.numeric(as.character(usresearchuniv$C150_4))
+# Change the factor columns to numeric for faster processing
+usunivfilter$C150_4 <- as.numeric(as.character(usunivfilter$C150_4))
+usunivfilter$ADM_RATE_ALL <- as.numeric(as.character(usunivfilter$ADM_RATE_ALL))
+usunivfilter$SAT_AVG_ALL <- as.numeric(as.character(usunivfilter$SAT_AVG_ALL))
+usunivfilter$UGDS_ASIAN <- as.numeric(as.character(usunivfilter$UGDS_ASIAN))
+usunivfilter$UGDS_WHITE <- as.numeric(as.character(usunivfilter$UGDS_WHITE))
+usunivfilter$UGDS_BLACK <- as.numeric(as.character(usunivfilter$UGDS_BLACK))
+usunivfilter$UGDS_MEN <- as.numeric(as.character(usunivfilter$UGDS_MEN))
+usunivfilter$UGDS_WOMEN <- as.numeric(as.character(usunivfilter$UGDS_WOMEN))
+usunivfilter$COSTT4_A <- as.numeric(as.character(usunivfilter$COSTT4_A))
+usunivfilter$PCIP11 <- as.numeric(as.character(usunivfilter$PCIP11))
+usunivfilter$PCTFLOAN <- as.numeric(as.character(usunivfilter$PCTFLOAN))
+usunivfilter$PPTUG_EF <- as.numeric(as.character(usunivfilter$PPTUG_EF))
+usunivfilter$RET_FT4 <- as.numeric(as.character(usunivfilter$RET_FT4))
+usunivfilter$PAR_ED_PCT_1STGEN <- as.numeric(as.character(usunivfilter$PAR_ED_PCT_1STGEN))
+
+# Clean the results to have all complete 
+usunivfilter <- usunivfilter[!is.na(usunivfilter$C150_4),]
+usunivfilter <- usunivfilter[!is.na(usunivfilter$ADM_RATE_ALL),]
+usunivfilter <- usunivfilter[!is.na(usunivfilter$SAT_AVG_ALL),]
+usunivfilter <- usunivfilter[!is.na(usunivfilter$UGDS_ASIAN),]
+usunivfilter <- usunivfilter[!is.na(usunivfilter$UGDS_WHITE),]
+usunivfilter <- usunivfilter[!is.na(usunivfilter$UGDS_BLACK),]
+usunivfilter <- usunivfilter[!is.na(usunivfilter$UGDS_WOMEN),]
+usunivfilter <- usunivfilter[!is.na(usunivfilter$UGDS_MEN),]
+usunivfilter <- usunivfilter[!is.na(usunivfilter$COSTT4_A),]
+usunivfilter <- usunivfilter[!is.na(usunivfilter$PCIP11),]
+usunivfilter <- usunivfilter[!is.na(usunivfilter$PCTFLOAN),]
+usunivfilter <- usunivfilter[!is.na(usunivfilter$PPTUG_EF),]
+usunivfilter <- usunivfilter[!is.na(usunivfilter$RET_FT4),]
+usunivfilter <- usunivfilter[!is.na(usunivfilter$PAR_ED_PCT_1STGEN),]
+
 ```
 
 #U.S. Research University Acceptance Model
 ```{r}
 # create a training and test model using a 75%/25% from the data set 
-rm_train <- sample(nrow(usresearchuniv), floor(nrow(usresearchuniv)*0.75))
-univ_train <- usresearchuniv[rm_train,]
-univ_test <- usresearchuniv[-rm_train,]
+rm_train <- sample(nrow(usunivfilter), floor(nrow(usunivfilter)*0.75))
+univ_train <- usunivfilter[rm_train_cleansed,]
+univ_test <- usunivfilter[-rm_train_cleansed,]
 
 # create a formula for the US research university acceptance model
-test_formulagen <- formula(ACCEPTED ~ REGION + ADM_RATE_ALL + SAT_AVG_ALL + PCIP11 + PCIP12 + PCIP14 + PCIP15 + PCIP26 + PCIP27 + PCIP40 + PCIP41 + UGDS_ASIAN + UGDS_AIAN + UGDS_NHPI + UGDS_2MOR + UGDS_NRA + UGDS_UNKN + COSTT4_A + PCTFLOAN +  UGDS_WOMEN)
+# test_formulagen <- formula(ACCEPTED ~ REGION + ADM_RATE_ALL + SAT_AVG_ALL + PCIP11 + PCIP12 + PCIP14 + PCIP15 + PCIP26 + PCIP27 + PCIP40 + PCIP41 + UGDS_ASIAN + UGDS_AIAN + UGDS_NHPI + UGDS_2MOR + UGDS_NRA + UGDS_UNKN + COSTT4_A + PCTFLOAN +  UGDS_WOMEN)
+
+# Create a formula to check to predict a female Asian student could be accepted in a US research university for
+
+test_formula_asian_CS <- formula(ACCEPTED ~ REGION + ADM_RATE_ALL + SAT_AVG_ALL + PCIP11 + UGDS_ASIAN + COSTT4_A + PCTFLOAN +  UGDS_WOMEN)
+
+
+model_glm <- glm(test_formula_asian_CS, data=utrain,family=binomial())
+
+test$scores <- predict(model_glm, type="response", newdata = utest)
+pred <- prediction(utest$scores, utest$ACCEPTED)
+c <- confusionMatrix(as.integer(utest$scores > 0.5), utest$ACCEPTED)
+c$table
+perf <- performance(pred,"tpr","fpr")
+plot(perf,lty=1)
 
 #other formulas to consider
-test_formula_asian_CS <- formula(ACCEPTED ~ REGION + ADM_RATE_ALL + SAT_AVG_ALL + PCIP11 + UGDS_ASIAN + COSTT4_A + PCTFLOAN +  UGDS_WOMEN)
 test_formula_asian_CS_noadm <- formula(ACCEPTED ~ REGION + SAT_AVG_ALL + PCIP11 + UGDS_ASIAN + COSTT4_A + PCTFLOAN +  UGDS_WOMEN)
 
 test_formula2 <- formula(ACCEPTED ~ PCIP01 + PCIP03 + PCIP04 + PCIP05 + PCIP09 + PCIP10 + PCIP11 + PCIP12 + PCIP13 + PCIP14 + PCIP15 + PCIP16 + PCIP19 + PCIP22 + PCIP23 + PCIP24 + PCIP25 + PCIP26 + PCIP27 + PCIP29 + PCIP30 + PCIP31 + PCIP38 + PCIP39 + PCIP40 + PCIP41 + PCIP42 + PCIP43 + PCIP44 + PCIP45 + PCIP46 + PCIP47 + PCIP48 + PCIP49 + PCIP50 + PCIP51 + PCIP52 + PCIP54)
@@ -81,12 +129,8 @@ test_formula3 <- formula(ACCEPTED ~ UGDS_WHITE + UGDS_BLACK + UGDS_HISP + UGDS_A
 
 formula_comp_asian2 <- formula(C150_4 ~ ADM_RATE_ALL + SAT_AVG_ALL + UGDS_ASIAN + PPTUG_EF + RET_FT4 + PAR_ED_PCT_1STGEN + UGDS_MEN )
 
-#using RFE to choose columns for the percentage of degrees awarded for each field of study
-set.seed(1)
-control <- rfeControl(functions = lmFuncs, method='cv')
-subsets <- c(1:5,10,15,20,25)
-rfe.
-train <- rfe(univ_train[,28:65], univ_train[,94], sizes=subsets, rfeControl=control)
+# add formula for random forest, svr and other methods of prediction
+
 ```
 
 # US Research University Completion Rate Prediction Model
