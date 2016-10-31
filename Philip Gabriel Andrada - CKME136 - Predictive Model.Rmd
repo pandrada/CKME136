@@ -12,18 +12,16 @@ output: pdf_document
 library(rpart)
 library(randomForest)
 library(caret)
-library(bigglm)
 library(Boruta)
-library(speedglm)
-library(ggplot2)
 library(e1071)
 library(ROCR)
 library(corrplot)
+library(ggplot2)
 
 #Reading Data Files
-usuniv2012 <- read.csv("C:\\Users\\Philip\\Desktop\\Capstone\\MERGED2012_13_PP.csv")
-usuniv2013 <- read.csv("C:\\Users\\Philip\\Desktop\\Capstone\\MERGED2013_14_PP.csv")
-usuniv2014 <- read.csv("C:\\Users\\Philip\\Desktop\\Capstone\\MERGED2014_15_PP.csv")
+usuniv2012 <- read.csv("C:\\Users\\pandrada\\Desktop\\Capstone\\MERGED2012_13_PP.csv")
+usuniv2013 <- read.csv("C:\\Users\\pandrada\\Desktop\\Capstone\\MERGED2013_14_PP.csv")
+usuniv2014 <- read.csv("C:\\Users\\pandrada\\Desktop\\Capstone\\MERGED2014_15_PP.csv")
 
 #Binding All Data Files into One Data Frame
 usuniv <- rbind(usuniv2012,usuniv2013,usuniv2014)
@@ -55,16 +53,15 @@ usuniv$ACCEPTED <- ifelse(usuniv$CCBASIC2 %in% c(15,16), 1, 0)
 # 1412 - percentage of first-generation students
 # 1740-1741 - total share of enrollment per gender
 # 1745 - acceptance flag
-col_select <- c(19,37:99,293:301,314,377,379:380,387,397:405,429,438,1412,1740:1741, 1745)
+col_select <- c(19,37:99,293:301,314,377,379:380,387,397:405,429,438,1412,1740:1741, 1744, 1745)
 
 # Create a new data frame with the columns that will be filtered out
 usunivfilter <- usuniv[,col_select]
 
 # Change the factor columns to numeric for faster processing
-for (i in 1:ncol(ttest)){
+for (i in 1:ncol(usunivfilter)){
   usunivfilter[,i] <- as.numeric(as.character(usunivfilter[,i]))
 }
-
 
 # Clean the results to have all complete 
 usunivfilter <- usunivfilter[!is.na(usunivfilter$C150_4),]
@@ -98,7 +95,7 @@ usunivfilter <- usunivfilter[!is.na(usunivfilter$RET_FT4),]
 usunivfilter <- usunivfilter[!is.na(usunivfilter$PAR_ED_PCT_1STGEN),]
 
 #We will create another data frame for the research universities only
-usresearchuniv <- usunivfilter[usuniv$CCBASIC2 %in% c(15,16),]
+usresearchuniv <- usunivfilter[usunivfilter$CCBASIC2 %in% c(15,16),]
 
 ```
 
@@ -115,7 +112,7 @@ plot(usunivfilter$ADM_RATE_ALL, usunivfilter$ACCEPTED, main="Admission Rates vs.
 plot(usresearchuniv$ADM_RATE_ALL, usresearchuniv$C150_4, main="Admission Rate vs. Program Completion Rate for Research Universities", xlab="Admission Rate (%)", ylab="Completion Rate (%)")
 
 #Correlation between admission rate for research universities and program completion rate
-plot(usresearchuniv$REGION, usresearchuniv$C150_4, main="Region vs. Program Completion Rate for Research Universities", xlab="Region Number", ylab="COmpletion Rate (%)")
+plot(usresearchuniv$REGION, usresearchuniv$C150_4, main="Region vs. Program Completion Rate for Research Universities", xlab="Region Number", ylab="Completion Rate (%)")
 
 #Correlation between attendees and completion rate of non-resident aliens (International Students)
 plot(usresearchuniv$UGDS_NRA, usresearchuniv$C150_4_NRA, main="Percentage of Attendees vs. Completion Rates of International Students in Research Universities", xlab="Population Share of International Students (%)", ylab="Completion Rate of International Students (%)")
@@ -129,41 +126,83 @@ plot(usresearchuniv$PAR_ED_PCT_1STGEN, usresearchuniv$C150_4, main="Percentage o
 ```{r}
 # create a training and test model using a 75%/25% from the data set 
 rm_train <- sample(nrow(usunivfilter), floor(nrow(usunivfilter)*0.75))
-univ_train <- usunivfilter[rm_train_cleansed,]
-univ_test <- usunivfilter[-rm_train_cleansed,]
+univ_train <- usunivfilter[rm_train,]
+univ_test <- usunivfilter[-rm_train,]
 
 # create a formula for the US research university acceptance model
-# test_formulagen <- formula(ACCEPTED ~ REGION + ADM_RATE_ALL + SAT_AVG_ALL + PCIP11 + PCIP12 + PCIP14 + PCIP15 + PCIP26 + PCIP27 + PCIP40 + PCIP41 + UGDS_ASIAN + UGDS_AIAN + UGDS_NHPI + UGDS_2MOR + UGDS_NRA + UGDS_UNKN + COSTT4_A + PCTFLOAN +  UGDS_WOMEN)
+test_formulagen <- formula(ACCEPTED ~ REGION + ADM_RATE_ALL + SAT_AVG_ALL + PCIP11 + PCIP12 + PCIP14 + PCIP15 + PCIP24 + PCIP26 + PCIP27 + PCIP40 + PCIP45 + PCIP51 + PCIP52 + UGDS_NRA + UGDS_UNKN + COSTT4_A + PCTFLOAN +  UGDS_WOMEN)
 
-# Create a formula to check to predict a female Asian student could be accepted in a US research university for
+# do a logistic regression model based on the formula created
+model_glm <- glm(test_formulagen, data=univ_train,family=binomial())
+summary(model_glm)
 
-test_formula_asian_CS <- formula(ACCEPTED ~ REGION + ADM_RATE_ALL + SAT_AVG_ALL + PCIP11 + UGDS_ASIAN + COSTT4_A + PCTFLOAN +  UGDS_WOMEN)
+#do the testing with the prediction model
+univ_test$scores <- predict(model_glm, type="response", newdata = univ_test)
+pred <- prediction(univ_test$scores, univ_test$ACCEPTED)
 
-
-model_glm <- glm(test_formula_asian_CS, data=utrain,family=binomial())
-
-test$scores <- predict(model_glm, type="response", newdata = utest)
-pred <- prediction(utest$scores, utest$ACCEPTED)
-c <- confusionMatrix(as.integer(utest$scores > 0.5), utest$ACCEPTED)
+# prepare confusion matrix to see the scores
+c <- confusionMatrix(as.integer(univ_test$scores > 0.5), univ_test$ACCEPTED)
 c$table
+
+# show the curve on the performance
 perf <- performance(pred,"tpr","fpr")
 plot(perf,lty=1)
 
+#doing single decision tree
+model_tree <- rpart(test_formulagen, method="anova",data = univ_train)
+pred_tree <- predict(model_tree, newdata = univ_test)
+accu = abs(pred_tree - univ_test$ACCEPTED) < 0.1
+frac = sum(accu)/length(accu)
+print(frac)
+
+#doing random forest
+model_forest <- randomForest(test_formulagen, data = univ_train)
+pred_forest <- predict(model_forest, newdata = univ_test)
+accu2 <- abs(pred_forest - univ_test$ACCEPTED) < 0.1
+frac2 <- sum(accu2)/length(accu2)
+print(frac2)
+
+#doing support vector machine
+model_svm <- svm(test_formulagen, data = univ_train)
+pred_svm <- predict(model_svm, newdata = univ_test)
+accu3 <- abs(pred_svm - univ_test$ACCEPTED) < 0.1
+frac3 <- sum(accu3)/length(accu3)
+print(frac3)
+
 #other formulas to consider
-test_formula_asian_CS_noadm <- formula(ACCEPTED ~ REGION + SAT_AVG_ALL + PCIP11 + UGDS_ASIAN + COSTT4_A + PCTFLOAN +  UGDS_WOMEN)
+#test_formula_asian_CS_noadm <- formula(ACCEPTED ~ REGION + SAT_AVG_ALL + PCIP11 + UGDS_ASIAN + COSTT4_A + PCTFLOAN +  UGDS_WOMEN)
 
-test_formula2 <- formula(ACCEPTED ~ PCIP01 + PCIP03 + PCIP04 + PCIP05 + PCIP09 + PCIP10 + PCIP11 + PCIP12 + PCIP13 + PCIP14 + PCIP15 + PCIP16 + PCIP19 + PCIP22 + PCIP23 + PCIP24 + PCIP25 + PCIP26 + PCIP27 + PCIP29 + PCIP30 + PCIP31 + PCIP38 + PCIP39 + PCIP40 + PCIP41 + PCIP42 + PCIP43 + PCIP44 + PCIP45 + PCIP46 + PCIP47 + PCIP48 + PCIP49 + PCIP50 + PCIP51 + PCIP52 + PCIP54)
+#test_formula2 <- formula(ACCEPTED ~ PCIP01 + PCIP03 + PCIP04 + PCIP05 + PCIP09 + PCIP10 + PCIP11 + PCIP12 + PCIP13 + PCIP14 + PCIP15 + PCIP16 + PCIP19 + PCIP22 + PCIP23 + PCIP24 + PCIP25 + PCIP26 + PCIP27 + PCIP29 + PCIP30 + PCIP31 + PCIP38 + PCIP39 + PCIP40 + PCIP41 + PCIP42 + PCIP43 + PCIP44 + PCIP45 + PCIP46 + PCIP47 + PCIP48 + PCIP49 + PCIP50 + PCIP51 + PCIP52 + PCIP54)
 
-test_formula3 <- formula(ACCEPTED ~ UGDS_WHITE + UGDS_BLACK + UGDS_HISP + UGDS_ASIAN + UGDS_AIAN + UGDS_NHPI + UGDS_2MOR + UGDS_NRA + UGDS_UNKN)
+#test_formula3 <- formula(ACCEPTED ~ UGDS_WHITE + UGDS_BLACK + UGDS_HISP + UGDS_ASIAN + UGDS_AIAN + UGDS_NHPI + UGDS_2MOR + UGDS_NRA + UGDS_UNKN)
 
-formula_comp_asian2 <- formula(C150_4 ~ ADM_RATE_ALL + SAT_AVG_ALL + UGDS_ASIAN + PPTUG_EF + RET_FT4 + PAR_ED_PCT_1STGEN + UGDS_MEN )
-
-# add formula for random forest, svr and other methods of prediction
-
+#formula_comp_asian2 <- formula(C150_4 ~ ADM_RATE_ALL + SAT_AVG_ALL + UGDS_ASIAN + PPTUG_EF + RET_FT4 + PAR_ED_PCT_1STGEN + UGDS_MEN )
 ```
 
 # US Research University Completion Rate Prediction Model
 
 ```{r}
+rm_train2 <- sample(nrow(usresearchuniv), floor(nrow(usresearchuniv)*0.75))
+univ_train2 <- usresearchuniv[rm_train2,]
+univ_test2 <- usresearchuniv[-rm_train2,]
 
+formula_completionrate <- formula(C150_4_NRA ~ REGION + ADM_RATE_ALL + UGDS_NRA + PPTUG_EF + COSTT4_A + PCTFLOAN + PAR_ED_PCT_1STGEN)
+
+model_tree2 <- rpart(formula_completionrate, method="anova",data = univ_train2)
+pred_tree2 <- predict(model_tree2, newdata = univ_test2)
+accu4 = abs(pred_tree2 - univ_test2$C150_4_NRA) < 0.3
+frac4 = sum(accu4)/length(accu4)
+print(frac4)
+
+model_forest2 <- randomForest(formula_completionrate, data = univ_train2)
+pred_forest2 <- predict(model_forest2, newdata = univ_test2)
+accu5 <- abs(pred_forest2 - univ_test2$ACCEPTED) < 0.3
+frac5 <- sum(accu5)/length(accu5)
+print(frac5)
+
+model_svm2 <- svm(formula_completionrate, data = univ_train2)
+pred_svm2 <- predict(model_svm2, newdata = univ_test2)
+accu6 <- abs(pred_svm2 - univ_test2$ACCEPTED) < 0.3
+frac6 <- sum(accu6)/length(accu6)
+print(frac6)
 ```
