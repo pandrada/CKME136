@@ -1,7 +1,7 @@
 ---
 title: "US Research University Prediction Model"
 author: "Philip Gabriel Andrada"
-date: "October 28, 2016"
+date: "October 30, 2016"
 output: pdf_document
 ---
 
@@ -18,11 +18,12 @@ library(speedglm)
 library(ggplot2)
 library(e1071)
 library(ROCR)
+library(corrplot)
 
 #Reading Data Files
-usuniv2012 <- read.csv("C:\\Users\\pandrada\\Desktop\\Capstone\\MERGED2012_13_PP.csv")
-usuniv2013 <- read.csv("C:\\Users\\pandrada\\Desktop\\Capstone\\MERGED2013_14_PP.csv")
-usuniv2014 <- read.csv("C:\\Users\\pandrada\\Desktop\\Capstone\\MERGED2014_15_PP.csv")
+usuniv2012 <- read.csv("C:\\Users\\Philip\\Desktop\\Capstone\\MERGED2012_13_PP.csv")
+usuniv2013 <- read.csv("C:\\Users\\Philip\\Desktop\\Capstone\\MERGED2013_14_PP.csv")
+usuniv2014 <- read.csv("C:\\Users\\Philip\\Desktop\\Capstone\\MERGED2014_15_PP.csv")
 
 #Binding All Data Files into One Data Frame
 usuniv <- rbind(usuniv2012,usuniv2013,usuniv2014)
@@ -32,9 +33,6 @@ usuniv$CCBASIC2 <- usuniv2014$CCBASIC[match(usuniv$OPEID6,usuniv2014$OPEID6)]
 
 #added the ACCEPTED column for those that are research universities (CCBASIC2 is equal to 15 or 16), as our focus will be on these
 usuniv$ACCEPTED <- ifelse(usuniv$CCBASIC2 %in% c(15,16), 1, 0)
-
-#We will create another data frame for the research universities only
-usresearchuniv <- usuniv[usuniv$CCBASIC2 %in% c(15,16),]
 
 #Create a vector with the columns that is needed from the study
 # 19 - institution region (1-New England, 2-Mid East, 3-Great Lakes, 4-Plains, 5-Southeast, 6-Southwest, 7-Rocky Mountains, 8-Far West, 9-Outlying Areas)
@@ -63,36 +61,67 @@ col_select <- c(19,37:99,293:301,314,377,379:380,387,397:405,429,438,1412,1740:1
 usunivfilter <- usuniv[,col_select]
 
 # Change the factor columns to numeric for faster processing
-usunivfilter$C150_4 <- as.numeric(as.character(usunivfilter$C150_4))
-usunivfilter$ADM_RATE_ALL <- as.numeric(as.character(usunivfilter$ADM_RATE_ALL))
-usunivfilter$SAT_AVG_ALL <- as.numeric(as.character(usunivfilter$SAT_AVG_ALL))
-usunivfilter$UGDS_ASIAN <- as.numeric(as.character(usunivfilter$UGDS_ASIAN))
-usunivfilter$UGDS_WHITE <- as.numeric(as.character(usunivfilter$UGDS_WHITE))
-usunivfilter$UGDS_BLACK <- as.numeric(as.character(usunivfilter$UGDS_BLACK))
-usunivfilter$UGDS_MEN <- as.numeric(as.character(usunivfilter$UGDS_MEN))
-usunivfilter$UGDS_WOMEN <- as.numeric(as.character(usunivfilter$UGDS_WOMEN))
-usunivfilter$COSTT4_A <- as.numeric(as.character(usunivfilter$COSTT4_A))
-usunivfilter$PCIP11 <- as.numeric(as.character(usunivfilter$PCIP11))
-usunivfilter$PCTFLOAN <- as.numeric(as.character(usunivfilter$PCTFLOAN))
-usunivfilter$PPTUG_EF <- as.numeric(as.character(usunivfilter$PPTUG_EF))
-usunivfilter$RET_FT4 <- as.numeric(as.character(usunivfilter$RET_FT4))
-usunivfilter$PAR_ED_PCT_1STGEN <- as.numeric(as.character(usunivfilter$PAR_ED_PCT_1STGEN))
+for (i in 1:ncol(ttest)){
+  usunivfilter[,i] <- as.numeric(as.character(usunivfilter[,i]))
+}
+
 
 # Clean the results to have all complete 
 usunivfilter <- usunivfilter[!is.na(usunivfilter$C150_4),]
+usunivfilter <- usunivfilter[!is.na(usunivfilter$C150_4_ASIAN),]
+usunivfilter <- usunivfilter[!is.na(usunivfilter$C150_4_WHITE),]
+usunivfilter <- usunivfilter[!is.na(usunivfilter$C150_4_BLACK),]
+usunivfilter <- usunivfilter[!is.na(usunivfilter$C150_4_NRA),]
 usunivfilter <- usunivfilter[!is.na(usunivfilter$ADM_RATE_ALL),]
 usunivfilter <- usunivfilter[!is.na(usunivfilter$SAT_AVG_ALL),]
 usunivfilter <- usunivfilter[!is.na(usunivfilter$UGDS_ASIAN),]
 usunivfilter <- usunivfilter[!is.na(usunivfilter$UGDS_WHITE),]
 usunivfilter <- usunivfilter[!is.na(usunivfilter$UGDS_BLACK),]
+usunivfilter <- usunivfilter[!is.na(usunivfilter$UGDS_NRA),]
 usunivfilter <- usunivfilter[!is.na(usunivfilter$UGDS_WOMEN),]
 usunivfilter <- usunivfilter[!is.na(usunivfilter$UGDS_MEN),]
 usunivfilter <- usunivfilter[!is.na(usunivfilter$COSTT4_A),]
 usunivfilter <- usunivfilter[!is.na(usunivfilter$PCIP11),]
+usunivfilter <- usunivfilter[!is.na(usunivfilter$PCIP12),]
+usunivfilter <- usunivfilter[!is.na(usunivfilter$PCIP14),]
+usunivfilter <- usunivfilter[!is.na(usunivfilter$PCIP15),]
+usunivfilter <- usunivfilter[!is.na(usunivfilter$PCIP24),]
+usunivfilter <- usunivfilter[!is.na(usunivfilter$PCIP26),]
+usunivfilter <- usunivfilter[!is.na(usunivfilter$PCIP27),]
+usunivfilter <- usunivfilter[!is.na(usunivfilter$PCIP40),]
+usunivfilter <- usunivfilter[!is.na(usunivfilter$PCIP45),]
+usunivfilter <- usunivfilter[!is.na(usunivfilter$PCIP51),]
+usunivfilter <- usunivfilter[!is.na(usunivfilter$PCIP52),]
 usunivfilter <- usunivfilter[!is.na(usunivfilter$PCTFLOAN),]
 usunivfilter <- usunivfilter[!is.na(usunivfilter$PPTUG_EF),]
 usunivfilter <- usunivfilter[!is.na(usunivfilter$RET_FT4),]
 usunivfilter <- usunivfilter[!is.na(usunivfilter$PAR_ED_PCT_1STGEN),]
+
+#We will create another data frame for the research universities only
+usresearchuniv <- usunivfilter[usuniv$CCBASIC2 %in% c(15,16),]
+
+```
+
+#Correlations
+
+```{r}
+#Correlation between the SAT grades and the acceptance for the research universities
+plot(usunivfilter$SAT_AVG_ALL, usunivfilter$ACCEPTED, main="SAT Average Grades vs. Acceptance to Research Universities", xlab="SAT Average Grades", ylab="Accepted (1 or 0)")
+
+#Correlation between the admission rates and the acceptance for the research universities
+plot(usunivfilter$ADM_RATE_ALL, usunivfilter$ACCEPTED, main="Admission Rates vs. Acceptance to Research Universities", xlab="Admission Rates (%)", ylab="Accepted (1 or 0)")
+
+#Correlation between admission rate for research universities and program completion rate
+plot(usresearchuniv$ADM_RATE_ALL, usresearchuniv$C150_4, main="Admission Rate vs. Program Completion Rate for Research Universities", xlab="Admission Rate (%)", ylab="Completion Rate (%)")
+
+#Correlation between admission rate for research universities and program completion rate
+plot(usresearchuniv$REGION, usresearchuniv$C150_4, main="Region vs. Program Completion Rate for Research Universities", xlab="Region Number", ylab="COmpletion Rate (%)")
+
+#Correlation between attendees and completion rate of non-resident aliens (International Students)
+plot(usresearchuniv$UGDS_NRA, usresearchuniv$C150_4_NRA, main="Percentage of Attendees vs. Completion Rates of International Students in Research Universities", xlab="Population Share of International Students (%)", ylab="Completion Rate of International Students (%)")
+
+#Correlation between attendees and completion rate of 1st Generation students in Research Universities
+plot(usresearchuniv$PAR_ED_PCT_1STGEN, usresearchuniv$C150_4, main="Percentage of Attendees vs. Completion Rates of 1st Generation Students in Research Universities", xlab="1st Year Generation Students (%)", ylab="Completion Rate (%)")
 
 ```
 
