@@ -1,23 +1,27 @@
 ---
 title: "US Research University Prediction Model"
 author: "Philip Gabriel Andrada"
-date: "October 31, 2016"
-output: word_document
+date: "November 02, 2016"
+output: pdf_document
 ---
 
 #Preparation
 
-```{r}
-#loading necessary libraries
+```{r, warning = F}
+# loading necessary libraries
 library(rpart)
 library(randomForest)
+library(tree)
+library(party)
 library(caret)
 library(Boruta)
 library(e1071)
 library(ROCR)
 library(corrplot)
 library(ggplot2)
+```
 
+```{r}
 #Reading Data Files
 usuniv2010 <- read.csv("C:\\Users\\Philip\\Desktop\\Capstone\\MERGED2010_11_PP.csv")
 usuniv2011 <- read.csv("C:\\Users\\Philip\\Desktop\\Capstone\\MERGED2011_12_PP.csv")
@@ -104,48 +108,49 @@ usresearchuniv <- usunivfilter[usunivfilter$CCBASIC2 %in% c(15,16),]
 
 ```{r}
 # Histogram of SAT Averages for US Colleges and Universities
-hist(usunivfilter$SAT_AVG_ALL, main = "Histogram of SAT Averages for US Colleges and Universities", xlab="SAT Average")
+hist(usunivfilter$SAT_AVG_ALL, main = "Histogram of SAT Averages for US Colleges and Universities (AY2010-2015)", xlab="SAT Average")
 
 # Histogram of SAT Averages for US Research Universities
-hist(usresearchuniv$SAT_AVG_ALL, main = "Histogram of SAT Averages for US Colleges and Universities", xlab="SAT Average")
+hist(usresearchuniv$SAT_AVG_ALL, main = "Histogram of SAT Averages for US Research Universities (AY2010-2015)", xlab="SAT Average")
 
 # Histogram of Admission Rates for US Research Universities
-hist(usresearchuniv$ADM_RATE_ALL, main = "Histogram of Admission Rates for Research Universities", xlab = "Admission Rate (%)")
+hist(usresearchuniv$ADM_RATE_ALL, main = "Histogram of Admission Rates for Research Universities (AY2010-2015)", xlab = "Admission Rate (%)")
 
 # Histogram of Women in US Research Universitie
-hist(usresearchuniv$UGDS_WOMEN, main = "Histogram of Women in Research Universities", xlab = "Demographic of Women (%)")
+hist(usresearchuniv$UGDS_WOMEN, main = "Histogram of Women in Research Universities (AY2010-2015)", xlab = "Demographic of Women (%)")
 
 # Boxplot of Completion Rates per Region in US Research Universities
-boxplot(C150_4 ~ REGION, usresearchuniv, main = "Completion Rates in Research Universities per Region", col=c("red", "orange", "yellow", "green", "blue", "violet", "white", "gray", "magenta"), ylab = "Completion Rate", xlab = "Regions")
+boxplot(C150_4 ~ REGION, usresearchuniv, main = "Completion Rates in Research Universities per Region (AY2010-2015)", col=c("red", "orange", "yellow", "green", "blue", "violet", "white", "gray", "magenta"), ylab = "Completion Rate", xlab = "Regions")
 
 # Boxplot of COmpletion Rates of International Students per Region in US Research Universities
-boxplot(C150_4_NRA ~ REGION, usresearchuniv, main = "Completion Rates of International Students in Research Universities Per Region", col=c("red", "orange", "yellow", "green", "blue", "violet", "white", "gray", "magenta"), ylab = "Completion Rate", xlab = "Regions")
+boxplot(C150_4_NRA ~ REGION, usresearchuniv, main = "Completion Rates of International Students in Research Universities Per Region (AY2010-2015)", col=c("red", "orange", "yellow", "green", "blue", "violet", "white", "gray", "magenta"), ylab = "Completion Rate", xlab = "Regions")
 ```
 
 #Correlations
 
 ```{r}
 #Correlation between the SAT grades and the acceptance for the research universities
-plot(usunivfilter$SAT_AVG_ALL, usunivfilter$ACCEPTED, main="SAT Average Grades vs. Acceptance to Research Universities", xlab="SAT Average Grades", ylab="Accepted (1 or 0)")
+plot(usunivfilter$SAT_AVG_ALL, usunivfilter$ACCEPTED, main="SAT Average Grades vs. Acceptance to Research Universities (AY2010-2015)", xlab="SAT Average Grades", ylab="Accepted (1 or 0)")
 
 #Correlation between the admission rates and the acceptance for the research universities
-plot(usunivfilter$ADM_RATE_ALL, usunivfilter$ACCEPTED, main="Admission Rates vs. Acceptance to Research Universities", xlab="Admission Rates (%)", ylab="Accepted (1 or 0)")
+plot(usunivfilter$ADM_RATE_ALL, usunivfilter$ACCEPTED, main="Admission Rates vs. Acceptance to Research Universities (AY2010-2015)", xlab="Admission Rates (%)", ylab="Accepted (1 or 0)")
 
 #Correlation between admission rate for research universities and program completion rate
-plot(usresearchuniv$ADM_RATE_ALL, usresearchuniv$C150_4, main="Admission Rate vs. Program Completion Rate for Research Universities", xlab="Admission Rate (%)", ylab="Completion Rate (%)")
-
-#Correlation between admission rate for research universities and program completion rate
-plot(usresearchuniv$REGION, usresearchuniv$C150_4, main="Region vs. Program Completion Rate for Research Universities", xlab="Region Number", ylab="Completion Rate (%)")
+plot(usresearchuniv$ADM_RATE_ALL, usresearchuniv$C150_4, main="Admission Rate vs. Program Completion Rate for Research Universities (AY2010-2015)", xlab="Admission Rate (%)", ylab="Completion Rate (%)")
 
 #Correlation between attendees and completion rate of non-resident aliens (International Students)
-plot(usresearchuniv$UGDS_NRA, usresearchuniv$C150_4_NRA, main="Percentage of Attendees vs. Completion Rates of International Students in Research Universities", xlab="Population Share of International Students (%)", ylab="Completion Rate of International Students (%)")
+plot(usresearchuniv$UGDS_NRA, usresearchuniv$C150_4_NRA, main="Percentage of Attendees vs. Completion Rates of International Students in Research Universities (AY2010-2015)", xlab="Population Share of International Students (%)", ylab="Completion Rate of International Students (%)")
 
 #Correlation between attendees and completion rate of 1st Generation students in Research Universities
-plot(usresearchuniv$PAR_ED_PCT_1STGEN, usresearchuniv$C150_4, main="Percentage of Attendees vs. Completion Rates of 1st Generation Students in Research Universities", xlab="1st Year Generation Students (%)", ylab="Completion Rate (%)")
+plot(usresearchuniv$PAR_ED_PCT_1STGEN, usresearchuniv$C150_4, main="Percentage of Attendees vs. Completion Rates of 1st Generation Students in Research Universities (AY2010-2015)", xlab="1st Year Generation Students (%)", ylab="Completion Rate (%)")
 
 ```
 
 #U.S. Research University Acceptance Model
+
+In this report section, we are going to create a formula on getting an acceptance to a US Research University based on the College Scorecard statistics. We will try different methods of regression, and find the best regression technique from the following sources.
+
+We will also consider another formula based on an international student taking up science degree/major.
 
 ```{r}
 # create a training and test model using a 75%/25% from the data set 
@@ -153,49 +158,130 @@ rm_train <- sample(nrow(usunivfilter), floor(nrow(usunivfilter)*0.75))
 univ_train <- usunivfilter[rm_train,]
 univ_test <- usunivfilter[-rm_train,]
 
-# create a formula for the US research university acceptance model for International Students taking up Science degrees/majors
-test_formulagen <- formula(ACCEPTED ~ REGION + ADM_RATE_ALL + SAT_AVG_ALL + PCIP11 + PCIP12 + PCIP14 + PCIP15 + PCIP24 + PCIP26 + PCIP27 + PCIP40 + PCIP45 + PCIP51 + PCIP52 + UGDS_NRA + UGDS_UNKN + COSTT4_A + PCTFLOAN +  UGDS_WOMEN)
+# create a generic formula for the US research university acceptance model for International Students based on SAT, average cost, loans, and gender
+formula_ISAcceptance <- formula(ACCEPTED ~ REGION + ADM_RATE_ALL + SAT_AVG_ALL + UGDS_NRA + COSTT4_A + PCTFLOAN +  UGDS_WOMEN)
 
-# do a logistic regression model based on the formula created
-model_glm <- glm(test_formulagen, data=univ_train,family=binomial())
-summary(model_glm)
+# do a logistic regression model based on this
+glm_ISAcceptance <- glm(formula_ISAcceptance, data = univ_train, family = binomial())
+summary(glm_ISAcceptance)
 
-# do the testing with the prediction model
-univ_test$scores <- predict(model_glm, type="response", newdata = univ_test)
-pred <- prediction(univ_test$scores, univ_test$ACCEPTED)
+# do the first testing with the prediction model
+accepted_ind <- predict(glm_ISAcceptance, type="response", newdata = univ_test)
+pred1 <- prediction(accepted_ind, univ_test$ACCEPTED)
 
-# prepare confusion matrix to see the scores
-c <- confusionMatrix(as.integer(univ_test$scores > 0.5), univ_test$ACCEPTED)
-c$table
+# create the confusion matrix and accuracy for this prediction model
+c1 <- confusionMatrix(as.integer(accepted_ind > 0.5), univ_test$ACCEPTED)
+c1$table
+c1$overall['Accuracy']
 
 # show the curve on the performance
-perf <- performance(pred,"tpr","fpr")
-plot(perf, lty = 1)
+perf1 <- performance(pred1, "tpr", "fpr")
+plot(perf1, lty = 1)
 
 # Now we check on what acceptable ways we could do for regression
-#doing single decision tree
-model_tree <- rpart(test_formulagen, method="anova",data = univ_train)
-pred_tree <- predict(model_tree, newdata = univ_test)
-accu = abs(pred_tree - univ_test$ACCEPTED) < 0.25
-frac = sum(accu)/length(accu)
-print(frac)
+# doing single decision tree
+model_dtree1 <- rpart(formula_ISAcceptance, method="anova",data = univ_train)
+pred_dtree1 <- predict(model_dtree1, newdata = univ_test)
+accu1 = abs(pred_dtree1 - univ_test$ACCEPTED) < 0.5
+frac1 = sum(accu1)/length(accu1)
+print(frac1)
 
-#doing random forest
-model_forest <- randomForest(test_formulagen, data = univ_train)
-pred_forest <- predict(model_forest, newdata = univ_test)
-accu2 <- abs(pred_forest - univ_test$ACCEPTED) < 0.25
+# doing random forest
+model_forest1 <- randomForest(formula_ISAcceptance, data = univ_train)
+pred_forest1 <- predict(model_forest1, newdata = univ_test)
+accu2 <- abs(pred_forest1 - univ_test$ACCEPTED) < 0.5
 frac2 <- sum(accu2)/length(accu2)
 print(frac2)
 
-#doing support vector machine
-model_svm <- svm(test_formulagen, data = univ_train)
-pred_svm <- predict(model_svm, newdata = univ_test)
-accu3 <- abs(pred_svm - univ_test$ACCEPTED) < 0.25
+# doing support vector machine
+model_svm1 <- svm(formula_ISAcceptance, data = univ_train)
+pred_svm1 <- predict(model_svm1, newdata = univ_test)
+accu3 <- abs(pred_svm1 - univ_test$ACCEPTED) < 0.5
 frac3 <- sum(accu3)/length(accu3)
 print(frac3)
 
-# We will consider all variables, and use Boruta to use what variables we could use for doing a better outcome of the moded
+# doing simple tree
+model_tree1 <- tree(formula_ISAcceptance, data = univ_train)
+pred_tree1 <- predict(model_tree1, newdata = univ_test)
+accu4 <- abs(pred_tree1 - univ_test$ACCEPTED) < 0.5
+frac4 <- sum(accu4)/length(accu4)
+print(frac4)
 
+# doing conditional inference tree
+model_party1 <- ctree(formula_ISAcceptance, data = univ_train)
+pred_party1 <- predict(model_party1, newdata = univ_test)
+accu5 <- abs(pred_party1 - univ_test$ACCEPTED) < 0.5
+frac5 <- sum(accu5)/length(accu5)
+print(frac5)
+```
+
+Based on the run, random forest is the best regression method to use in this model.
+
+Next, another formula is created. This is an acceptance model for an international student that wants to take up Science degree/major
+
+```{r}
+# create a formula for the US research university acceptance model for International Students taking up Science degrees/majors
+formula_ISSciAcceptance <- formula(ACCEPTED ~ REGION + ADM_RATE_ALL + SAT_AVG_ALL + PCIP11 + PCIP12 + PCIP14 + PCIP15 + PCIP24 + PCIP26 + PCIP27 + PCIP40 + PCIP45 + PCIP51 + PCIP52 + UGDS_NRA + UGDS_UNKN + COSTT4_A + PCTFLOAN +  UGDS_WOMEN)
+
+# do a logistic regression model based on the formula created
+glm_ISSciAcceptance <- glm(formula_ISSciAcceptance, data=univ_train,family=binomial())
+summary(glm_ISSciAcceptance)
+
+# do the testing with the prediction model
+accepted_ind2 <- predict(glm_ISSciAcceptance, type="response", newdata = univ_test)
+pred2 <- prediction(accepted_ind2, univ_test$ACCEPTED)
+
+# prepare confusion matrix and accuracy to see the scores
+c2 <- confusionMatrix(as.integer(accepted_ind2 > 0.5), univ_test$ACCEPTED)
+c2$table
+c2$overall['Accuracy']
+
+# show the curve on the performance
+perf2 <- performance(pred2,"tpr","fpr")
+plot(perf2, lty = 1)
+
+# Now we check on what acceptable ways we could do for regression
+# doing single decision tree
+model_dtree2 <- rpart(formula_ISSciAcceptance, method="anova",data = univ_train)
+pred_dtree2 <- predict(model_dtree2, newdata = univ_test)
+accu6 <- abs(pred_dtree2 - univ_test$ACCEPTED) < 0.5
+frac6 <- sum(accu6)/length(accu6)
+print(frac6)
+
+# doing random forest
+model_forest2 <- randomForest(formula_ISSciAcceptance, data = univ_train)
+pred_forest2 <- predict(model_forest2, newdata = univ_test)
+accu7 <- abs(pred_forest2 - univ_test$ACCEPTED) < 0.5
+frac7 <- sum(accu7)/length(accu7)
+print(frac7)
+
+# doing support vector machine
+model_svm2 <- svm(formula_ISSciAcceptance, data = univ_train)
+pred_svm2 <- predict(model_svm2, newdata = univ_test)
+accu8 <- abs(pred_svm2 - univ_test$ACCEPTED) < 0.5
+frac8 <- sum(accu8)/length(accu8)
+print(frac8)
+
+# doing simple tree
+model_tree2 <- tree(formula_ISSciAcceptance, data = univ_train)
+pred_tree2 <- predict(model_tree2, newdata = univ_test)
+accu9 <- abs(pred_tree2 - univ_test$ACCEPTED) < 0.5
+frac9 <- sum(accu9)/length(accu9)
+print(frac9)
+
+# doing conditional inference tree
+model_party2 <- ctree(formula_ISSciAcceptance, data = univ_train)
+pred_party2 <- predict(model_party2, newdata = univ_test)
+accu10 <- abs(pred_party2 - univ_test$ACCEPTED) < 0.5
+frac10 <- sum(accu10)/length(accu10)
+print(frac10)
+```
+
+Based on this, random forest is the best regression method to use.
+
+In this portion, we will consider all variables, and use Boruta and RFE to use what variables we could use for doing a better outcome of the moded
+
+```{r, warning = F}
 # First, we will create another copy of the dataset
 usunivnoccbasic <- usunivfilter
 
@@ -206,13 +292,22 @@ usunivnoccbasic[usunivnoccbasic == "NA"] <- 0
 usunivnoccbasic <- usunivnoccbasic[complete.cases(usunivnoccbasic),]
 
 # Now that we have the cleansed dataset, we will implement Boruta
-boruta.train <- Boruta(ACCEPTED ~ .-CCBASIC2, data=usunivnoccbasic,doTrace = 2)
+boruta.train <- Boruta(ACCEPTED ~ .-CCBASIC2, data=usunivnoccbasic)
 print(boruta.train)
+getSelectedAttributes(boruta.train)
 
 # We will print the stats of the variables that would be accepted or not
 stats <- attStats(boruta.train)
 print(stats)
+
+#Now, let us try RFE
+rfe_control <- rfeControl(functions=rfFuncs, method="cv", number = 10)
+rfe.train <- rfe(usunivnoccbasic[,1:70], usunivnoccbasic[,72], sizes = 1:70, rfeControl = rfe_control)
+predictors(rfe.train)
 ```
+
+Based on these runs, Boruta has 61 attributes that are confirmed important, and 2 that are tentative. On the other hand, RFE confirms less than 30 variables that are very important.
+
 
 # US Research University Completion Rate Prediction Model
 
@@ -221,23 +316,55 @@ rm_train2 <- sample(nrow(usresearchuniv), floor(nrow(usresearchuniv)*0.75))
 univ_train2 <- usresearchuniv[rm_train2,]
 univ_test2 <- usresearchuniv[-rm_train2,]
 
-formula_completionrate <- formula(C150_4 ~ REGION + ADM_RATE_ALL + UGDS_NRA + PPTUG_EF + COSTT4_A + PCTFLOAN + PAR_ED_PCT_1STGEN)
+formula_completionrate <- formula(C150_4_NRA ~ REGION + ADM_RATE_ALL + UGDS_NRA + PPTUG_EF + COSTT4_A + PCTFLOAN + PAR_ED_PCT_1STGEN)
 
-model_tree2 <- rpart(formula_completionrate, method="anova",data = univ_train2)
-pred_tree2 <- predict(model_tree2, newdata = univ_test2)
-accu4 = abs(pred_tree2 - univ_test2$C150_4_NRA) < 0.25
-frac4 = sum(accu4)/length(accu4)
-print(frac4)
+# using multivariate linear regression to calculate the completion rate for international students
+lm_NRAcompletion <- lm(formula_completionrate, data = univ_train2)
+summary(lm_NRAcompletion)
 
-model_forest2 <- randomForest(formula_completionrate, data = univ_train2)
-pred_forest2 <- predict(model_forest2, newdata = univ_test2)
-accu5 <- abs(pred_forest2 - univ_test2$ACCEPTED) < 0.25
-frac5 <- sum(accu5)/length(accu5)
-print(frac5)
+# do the testing with the prediction model
+accepted_ind3 <- predict(lm_NRAcompletion, interval="prediction", newdata = univ_test2)
 
-model_svm2 <- svm(formula_completionrate, data = univ_train2)
-pred_svm2 <- predict(model_svm2, newdata = univ_test2)
-accu6 <- abs(pred_svm2 - univ_test2$ACCEPTED) < 0.25
-frac6 <- sum(accu6)/length(accu6)
-print(frac6)
+# Checking on PRED(25)
+errors <- accepted_ind3[,"fit"] - univ_test2$C150_4_NRA
+rel_change <- abs(errors) / univ_test2$C150_4_NRA
+table(rel_change<0.25)["TRUE"] / nrow(univ_test2)
+
+# Now we check on what acceptable ways we could do for regression
+# Doing single decision tree
+model_dtree3 <- rpart(formula_completionrate, method="anova",data = univ_train2)
+pred_dtree3 <- predict(model_dtree3, newdata = univ_test2)
+accu11 <- abs(pred_dtree3 - univ_test2$C150_4_NRA) < 0.25
+frac11 <- sum(accu11)/length(accu11)
+print(frac11)
+
+# Doing random forest
+model_forest3 <- randomForest(formula_completionrate, data = univ_train2)
+pred_forest3 <- predict(model_forest3, newdata = univ_test2)
+accu12 <- abs(pred_forest3 - univ_test2$C150_4_NRA) < 0.25
+frac12 <- sum(accu12)/length(accu12)
+print(frac12)
+
+# Doing support vector machine
+model_svm3 <- svm(formula_completionrate, data = univ_train2)
+pred_svm3 <- predict(model_svm3, newdata = univ_test2)
+accu13 <- abs(pred_svm3 - univ_test2$C150_4_NRA) < 0.25
+frac13 <- sum(accu13)/length(accu13)
+print(frac13)
+
+# doing simple tree
+model_tree3 <- tree(formula_completionrate, data = univ_train2)
+pred_tree3 <- predict(model_tree3, newdata = univ_test2)
+accu14 <- abs(pred_tree3 - univ_test2$C150_4_NRA) < 0.25
+frac14 <- sum(accu14)/length(accu14)
+print(frac14)
+
+# doing conditional inference tree
+model_party3 <- ctree(formula_completionrate, data = univ_train2)
+pred_party3 <- predict(model_party3, newdata = univ_test2)
+accu15 <- abs(pred_party3 - univ_test2$C150_4_NRA) < 0.25
+frac15 <- sum(accu15)/length(accu15)
+print(frac15)
 ```
+
+From the regressions that we have run, the random forest is the best regression model to use for determining completion rates for international students.
