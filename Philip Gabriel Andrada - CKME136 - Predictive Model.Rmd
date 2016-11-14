@@ -1,7 +1,7 @@
 ---
 title: "US Research University Prediction Model"
 author: "Philip Gabriel Andrada"
-date: "November 02, 2016"
+date: "November 14, 2016"
 output: pdf_document
 ---
 
@@ -23,11 +23,11 @@ library(ggplot2)
 
 ```{r}
 #Reading Data Files
-usuniv2010 <- read.csv("C:\\Users\\Philip\\Desktop\\Capstone\\MERGED2010_11_PP.csv")
-usuniv2011 <- read.csv("C:\\Users\\Philip\\Desktop\\Capstone\\MERGED2011_12_PP.csv")
-usuniv2012 <- read.csv("C:\\Users\\Philip\\Desktop\\Capstone\\MERGED2012_13_PP.csv")
-usuniv2013 <- read.csv("C:\\Users\\Philip\\Desktop\\Capstone\\MERGED2013_14_PP.csv")
-usuniv2014 <- read.csv("C:\\Users\\Philip\\Desktop\\Capstone\\MERGED2014_15_PP.csv")
+usuniv2010 <- read.csv("C:\\Users\\pandrada\\Desktop\\Capstone\\MERGED2010_11_PP.csv")
+usuniv2011 <- read.csv("C:\\Users\\pandrada\\Desktop\\Capstone\\MERGED2011_12_PP.csv")
+usuniv2012 <- read.csv("C:\\Users\\pandrada\\Desktop\\Capstone\\MERGED2012_13_PP.csv")
+usuniv2013 <- read.csv("C:\\Users\\pandrada\\Desktop\\Capstone\\MERGED2013_14_PP.csv")
+usuniv2014 <- read.csv("C:\\Users\\pandrada\\Desktop\\Capstone\\MERGED2014_15_PP.csv")
 
 #Binding All Data Files into One Data Frame
 usuniv <- rbind(usuniv2010,usuniv2011,usuniv2012,usuniv2013,usuniv2014)
@@ -37,6 +37,20 @@ usuniv$CCBASIC2 <- usuniv2014$CCBASIC[match(usuniv$OPEID6,usuniv2014$OPEID6)]
 
 #added the ACCEPTED column for those that are research universities (CCBASIC2 is equal to 15 or 16), as our focus will be on these
 usuniv$ACCEPTED <- ifelse(usuniv$CCBASIC2 %in% c(15,16), 1, 0)
+
+#number of rows in the usuniv data frame
+rows_usuniv <- nrow(usuniv)
+rows_usuniv
+
+#number of columns that are in the usuniv data frame
+ncol(usuniv)
+
+#number of rows that are research universities in the data frame before cleansing
+rows_usunivaccepted <- nrow(usuniv[usuniv$ACCEPTED == 1,])
+rows_usunivaccepted
+
+#grab a head of research universities to see if we got the correct ones
+head(usuniv[usuniv$ACCEPTED == 1,c(4,1744:1745)], 30)
 
 #Create a vector with the columns that is needed from the study
 # 19 - institution region (1-New England, 2-Mid East, 3-Great Lakes, 4-Plains, 5-Southeast, 6-Southwest, 7-Rocky Mountains, 8-Far West, 9-Outlying Areas)
@@ -54,7 +68,7 @@ usuniv$ACCEPTED <- ifelse(usuniv$CCBASIC2 %in% c(15,16), 1, 0)
 # 397-403 - completion rate for first-time, full-time students for different ethnicities
 # 404 - completion rate for first-time, full-time students for non-resident aliens
 # 405 - completion rate for first-time, full-time students that have unknown race
-# 429 - retention rate for first-time, full time studnets at four-year institutions
+# 429 - retention rate for first-time, full time students at four-year institutions
 # 438 - percent of all federal undergraduate students receiving a federal student loan
 # 1412 - percentage of first-generation students
 # 1740-1741 - total share of enrollment per gender
@@ -102,6 +116,21 @@ usunivfilter <- usunivfilter[!is.na(usunivfilter$PAR_ED_PCT_1STGEN),]
 
 #We will create another data frame for the research universities only
 usresearchuniv <- usunivfilter[usunivfilter$CCBASIC2 %in% c(15,16),]
+
+#show number of rows in the filtered usuniv
+rows_usunivfilter <- nrow(usunivfilter)
+rows_usunivfilter
+
+#percentage of data from filtered to unfiltered
+rows_usunivfilter / rows_usuniv
+
+#show number of rows of filtered research universities
+rows_usresearchuniv <- nrow(usresearchuniv)
+rows_usresearchuniv
+
+#percentage of data from filtered research universities to unfiltered
+rows_usresearchuniv / rows_usunivaccepted
+
 ```
 
 # Distributions and Box and Whisker Plots
@@ -116,35 +145,76 @@ hist(usresearchuniv$SAT_AVG_ALL, main = "Histogram of SAT Averages for US Resear
 # Histogram of Admission Rates for US Research Universities
 hist(usresearchuniv$ADM_RATE_ALL, main = "Histogram of Admission Rates for Research Universities (AY2010-2015)", xlab = "Admission Rate (%)")
 
-# Histogram of Women in US Research Universitie
+# Histogram of Women in US Research Universities
 hist(usresearchuniv$UGDS_WOMEN, main = "Histogram of Women in Research Universities (AY2010-2015)", xlab = "Demographic of Women (%)")
 
-# Boxplot of Completion Rates per Region in US Research Universities
-boxplot(C150_4 ~ REGION, usresearchuniv, main = "Completion Rates in Research Universities per Region (AY2010-2015)", col=c("red", "orange", "yellow", "green", "blue", "violet", "white", "gray", "magenta"), ylab = "Completion Rate", xlab = "Regions")
+#Boxplot of SAT Average in all US Research Universities
+boxplot(usresearchuniv$SAT_AVG_ALL, main = "SAT Averages \n in Research Universities (AY2010-2015)", ylab = "SAT Average")
 
-# Boxplot of COmpletion Rates of International Students per Region in US Research Universities
-boxplot(C150_4_NRA ~ REGION, usresearchuniv, main = "Completion Rates of International Students in Research Universities Per Region (AY2010-2015)", col=c("red", "orange", "yellow", "green", "blue", "violet", "white", "gray", "magenta"), ylab = "Completion Rate", xlab = "Regions")
+#Boxplot of admission rates in all US Research Universities
+boxplot(usresearchuniv$ADM_RATE_ALL, main = "Admission Rates \n in Research Universities (AY2010-2015)", ylab = "SAT Average")
+
+#Boxplot of Completion Rates in all US Research Universities
+boxplot(usresearchuniv$C150_4, main = "Completion Rates \n in Research Universities (AY2010-2015)", ylab = "Completion Rate")
+
+# Boxplot of Completion Rates per Region in US Research Universities
+boxplot(C150_4 ~ REGION, usresearchuniv, main = "Completion Rates \n in Research Universities \n per Region (AY2010-2015)", col=c("red", "orange", "yellow", "green", "blue", "violet", "white", "gray", "magenta"), ylab = "Completion Rate", xlab = "Regions")
+
+#Boxplot of Completion Rates of International Students in all US Research Universities
+boxplot(usresearchuniv$C150_4_NRA, main = "Completion Rates of International Students \n in Research Universities (AY2010-2015)", ylab = "Completion Rate")
+
+# Boxplot of Completion Rates of International Students per Region in US Research Universities
+boxplot(C150_4_NRA ~ REGION, usresearchuniv, main = "Completion Rates of International Students \n in Research Universities \n Per Region (AY2010-2015)", col=c("red", "orange", "yellow", "green", "blue", "violet", "white", "gray", "magenta"), ylab = "Completion Rate", xlab = "Regions")
+nrow(usresearchuniv[usresearchuniv$C150_4_NRA < 0.2,])
 ```
 
 #Correlations
 
 ```{r}
 #Correlation between the SAT grades and the acceptance for the research universities
-plot(usunivfilter$SAT_AVG_ALL, usunivfilter$ACCEPTED, main="SAT Average Grades vs. Acceptance to Research Universities (AY2010-2015)", xlab="SAT Average Grades", ylab="Accepted (1 or 0)")
+plot(usunivfilter$SAT_AVG_ALL, usunivfilter$ACCEPTED, main="SAT Average Grades vs. \n Acceptance to Research Universities (AY2010-2015)", xlab="SAT Average Grades", ylab="Accepted (1 or 0)")
 
 #Correlation between the admission rates and the acceptance for the research universities
-plot(usunivfilter$ADM_RATE_ALL, usunivfilter$ACCEPTED, main="Admission Rates vs. Acceptance to Research Universities (AY2010-2015)", xlab="Admission Rates (%)", ylab="Accepted (1 or 0)")
+plot(usunivfilter$ADM_RATE_ALL, usunivfilter$ACCEPTED, main="Admission Rates vs. \n Acceptance to Research Universities (AY2010-2015)", xlab="Admission Rates (%)", ylab="Accepted (1 or 0)")
 
 #Correlation between admission rate for research universities and program completion rate
-plot(usresearchuniv$ADM_RATE_ALL, usresearchuniv$C150_4, main="Admission Rate vs. Program Completion Rate for Research Universities (AY2010-2015)", xlab="Admission Rate (%)", ylab="Completion Rate (%)")
+plot(usresearchuniv$SAT_AVG_ALL, usresearchuniv$C150_4, main="SAT Average vs. Program Completion Rate \n for Research Universities (AY2010-2015)", xlab="Admission Rate (%)", ylab="Completion Rate (%)")
 
-#Correlation between attendees and completion rate of non-resident aliens (International Students)
-plot(usresearchuniv$UGDS_NRA, usresearchuniv$C150_4_NRA, main="Percentage of Attendees vs. Completion Rates of International Students in Research Universities (AY2010-2015)", xlab="Population Share of International Students (%)", ylab="Completion Rate of International Students (%)")
-
-#Correlation between attendees and completion rate of 1st Generation students in Research Universities
-plot(usresearchuniv$PAR_ED_PCT_1STGEN, usresearchuniv$C150_4, main="Percentage of Attendees vs. Completion Rates of 1st Generation Students in Research Universities (AY2010-2015)", xlab="1st Year Generation Students (%)", ylab="Completion Rate (%)")
-
+#Correlation coefficient between admission rate and completion rate
+cor(usresearchuniv$SAT_AVG_ALL, usresearchuniv$C150_4, method = "pearson")
 ```
+
+This means that there is a strong positive correlation between the SAT average scores and the completion rate for all students.
+
+```{r}
+#Correlation between admission rate for research universities and program completion rate
+plot(usresearchuniv$ADM_RATE_ALL, usresearchuniv$C150_4, main="Admission Rate vs. Program Completion Rate \n for Research Universities (AY2010-2015)", xlab="Admission Rate (%)", ylab="Completion Rate (%)")
+
+#Correlation coefficient between admission rate and completion rate
+cor(usresearchuniv$ADM_RATE_ALL, usresearchuniv$C150_4, method = "pearson")
+```
+
+This means that there is a strong negative correlation between the admission rates and the completion rates for the research universities.
+
+```{r}
+#Correlation between attendees and completion rate of non-resident aliens (International Students)
+plot(usresearchuniv$UGDS_NRA, usresearchuniv$C150_4_NRA, main="Percentage of Attendees vs. Completion Rates of \n International Students in Research Universities (AY2010-2015)", xlab="Population Share of International Students (%)", ylab="Completion Rate of International Students (%)")
+
+#Correlation coefficient between admission rate and completion rate of international students
+cor(usresearchuniv$UGDS_NRA, usresearchuniv$C150_4_NRA, method = "pearson")
+```
+
+This means that there is a weak positive correlation between international student population and their completion rate.
+
+```{r}
+#Correlation between attendees and completion rate of 1st Generation students in Research Universities
+plot(usresearchuniv$PAR_ED_PCT_1STGEN, usresearchuniv$C150_4, main="Percentage of Attendees vs. Completion Rates \n of 1st Generation Students in \n Research Universities (AY2010-2015)", xlab="1st Year Generation Students (%)", ylab="Completion Rate (%)")
+
+#Correlation coefficient between admission rate and completion rate of 1st Generation students
+cor(usresearchuniv$PAR_ED_PCT_1STGEN, usresearchuniv$C150_4, method = "pearson")
+```
+
+This means that there is a strong negative correlation between 1st generation students and completion rates in research universities.
 
 #U.S. Research University Acceptance Model
 
@@ -160,7 +230,33 @@ univ_test <- usunivfilter[-rm_train,]
 
 # create a generic formula for the US research university acceptance model for International Students based on SAT, average cost, loans, and gender
 formula_ISAcceptance <- formula(ACCEPTED ~ REGION + ADM_RATE_ALL + SAT_AVG_ALL + UGDS_NRA + COSTT4_A + PCTFLOAN +  UGDS_WOMEN)
+```
 
+We will do a generalized logistic regression formula.
+
+```{r}
+# create a logistic regression
+fit1 <- glm(formula_ISAcceptance, data = usunivfilter, family  = binomial())
+summary(fit1)
+```
+
+Based on the logistic regression, the formula will be $$\frac{1}{1+e^{-x}}$$ where $$x = -14.8 + 0.125REGION + 0.704ADM\_RATE\_ALL + 0.0146SAT\_AVG\_ALL + 6.64UGDS\_NRA - 0.0000918COSTT4\_A - 0.749PCTFLOAN - 2.00UGDS\_WOMEN$$.
+
+We will test this regression with some data types.
+
+```{r}
+# this will not accept the person because of the SAT average
+df_accept <- data.frame(REGION = 5, SAT_AVG_ALL = 900, ADM_RATE_ALL = .55, UGDS_NRA=.010, COSTT4_A = 20000, PCTFLOAN = 0.33, UGDS_WOMEN = .37)
+predict(fit1, type = "response", newdata = df_accept)
+
+# this will accept because of the SAT average and the cost
+df_accept2 <- data.frame(REGION = 3, SAT_AVG_ALL = 1350, ADM_RATE_ALL = .35, UGDS_NRA=.25, COSTT4_A = 25600, PCTFLOAN = 0.57, UGDS_WOMEN = .55)
+predict(fit1, type = "response", newdata = df_accept2)
+```
+
+Now, we will do some testing of performance with the logistic regression. Since we have split the dataset into training and testing set,  we will see how the performance will be done.
+
+```{r}
 # do a logistic regression model based on this
 glm_ISAcceptance <- glm(formula_ISAcceptance, data = univ_train, family = binomial())
 summary(glm_ISAcceptance)
@@ -172,8 +268,25 @@ pred1 <- prediction(accepted_ind, univ_test$ACCEPTED)
 # create the confusion matrix and accuracy for this prediction model
 c1 <- confusionMatrix(as.integer(accepted_ind > 0.5), univ_test$ACCEPTED)
 c1$table
+
+#Accuracy of the logistic regression model
 c1$overall['Accuracy']
 
+#Precision of the logistic regression model
+c1$byClass['Neg Pred Value']
+
+#Recall of the logistic regression model
+c1$byClass['Specificity']
+```
+
+Accuracy shows the correct value. But in precision and recall, it is using "Neg Pred Value" and "Specificity" respectively. It should have been "Pos Pred Value" and "Sensitivity", as defined before. However, I manually calculated for the precision and recall for these values, and they are displayed correctly as it should be.
+
+Precision:  TP / (FP + TP)
+Recall:     TP / (FN + TP)
+
+As I show the precision and recall, it would be done the same thing, and verified manually that these are the correct percentages.
+
+```{r}
 # show the curve on the performance
 perf1 <- performance(pred1, "tpr", "fpr")
 plot(perf1, lty = 1)
@@ -236,6 +349,12 @@ c2 <- confusionMatrix(as.integer(accepted_ind2 > 0.5), univ_test$ACCEPTED)
 c2$table
 c2$overall['Accuracy']
 
+#Precision of the logistic regression model
+c2$byClass['Neg Pred Value']
+
+#Recall of the logistic regression model
+c2$byClass['Specificity']
+
 # show the curve on the performance
 perf2 <- performance(pred2,"tpr","fpr")
 plot(perf2, lty = 1)
@@ -279,7 +398,18 @@ print(frac10)
 
 Based on this, random forest is the best regression method to use.
 
-In this portion, we will consider all variables, and use Boruta and RFE to use what variables we could use for doing a better outcome of the moded
+In this project, I have selected a couple of variables that we could use in this model. However, we could use more than a few variables to get the optimal result.
+
+With this in mind, feature selection is very essential, especially with datasets that have many variables for model selection. Although in this report, we have 1745 variables, and deduced it to 72 variables, we have to check which variables will be very useful in doing our research model.
+
+In this portion, we will consider all variables, and use Boruta and RFE to use what variables we could use for doing a better outcome of the model.
+
+Boruta is a package created was written by Miron B. Kursa and Witold R. Rudnicki to use an all relevant feature selection wrapper algorithm. According to their description, it "finds relevant features by comparing original attributes' importance with importance achievable at random, estimated
+using their permuted copies". (Source: https://cran.r-project.org/web/packages/Boruta/Boruta.pdf)
+
+The Recursive Feature Elimination, or RFE, is a function in R's Caret package that uses the random forest algorithm to evaluate the attributes needed to be able to get an optimal result in the data that we have. (Source: http://machinelearningmastery.com/feature-selection-with-the-caret-r-package/)
+
+Now, we will be doing some feature eliminations using Boruta and RFE.
 
 ```{r, warning = F}
 # First, we will create another copy of the dataset
@@ -300,13 +430,19 @@ getSelectedAttributes(boruta.train)
 stats <- attStats(boruta.train)
 print(stats)
 
+# We will plot on the number of variables and its importance for Boruta
+plot(boruta.train, type = c("g","o"), cex = 1.0, col = 1:70)
+
 #Now, let us try RFE
 rfe_control <- rfeControl(functions=rfFuncs, method="cv", number = 10)
 rfe.train <- rfe(usunivnoccbasic[,1:70], usunivnoccbasic[,72], sizes = 1:70, rfeControl = rfe_control)
 predictors(rfe.train)
+
+# We will plot on the number of variables and its importance for RFE
+plot(rfe.train, type = c("g","o"), cex = 1.0, col = 1:70)
 ```
 
-Based on these runs, Boruta has 61 attributes that are confirmed important, and 2 that are tentative. On the other hand, RFE confirms less than 30 variables that are very important.
+Based on these runs, RFE determines fewer variables needed for the prediction model than Boruta. There would be some cases that the Boruta package could be used, depending on the number of variables.
 
 
 # US Research University Completion Rate Prediction Model
