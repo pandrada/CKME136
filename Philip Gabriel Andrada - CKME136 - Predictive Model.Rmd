@@ -1,7 +1,7 @@
 ---
 title: "US Research University Prediction Model"
 author: "Philip Gabriel Andrada"
-date: "November 14, 2016"
+date: "November 15, 2016"
 output: pdf_document
 ---
 
@@ -453,11 +453,36 @@ univ_train2 <- usresearchuniv[rm_train2,]
 univ_test2 <- usresearchuniv[-rm_train2,]
 
 formula_completionrate <- formula(C150_4_NRA ~ REGION + ADM_RATE_ALL + UGDS_NRA + PPTUG_EF + COSTT4_A + PCTFLOAN + PAR_ED_PCT_1STGEN)
+```
 
+We will do a generalized multivariate linear regression formula.
+
+```{r}
+# create a logistic regression
+fit2 <- lm(formula_completionrate, data = usresearchuniv)
+summary(fit2)
+```
+
+Based on the regression, the formula will be $$C150\_4\_NRA = 0.932 - 0.00279REGION - 0.147ADM\_RATE\_ALL +  0.021UGDS\_NRA - 0.351PPTUG\_EF + 0.00000159COSTT4\_A - 0.361PCTFLOAN - 0.0958PAR\_ED\_PCT\_1STGEN$$.
+
+We will test this regression with some data types.
+
+```{r}
+# for Ivy League schools with high admission rates for all and international students 
+df_accept3 <- data.frame(REGION = 1, ADM_RATE_ALL = .55, UGDS_NRA=.25, PPTUG_EF = 0.07, COSTT4_A = 50000, PCTFLOAN = 0.40, PAR_ED_PCT_1STGEN = .40)
+predict(fit2, newdata = df_accept3)
+
+# for Ivy League schools with less admission rates, but have high shares of students doing part-time
+df_accept4 <- data.frame(REGION = 1, ADM_RATE_ALL = .05, UGDS_NRA=.05, PPTUG_EF = 0.46, COSTT4_A = 50000, PCTFLOAN = 0.58, PAR_ED_PCT_1STGEN = .30)
+predict(fit2, newdata = df_accept4)
+```
+
+Now, we will do some testing of performance with the logistic regression. Since we have split the dataset into training and testing set,  we will see how the performance will be done.
+
+```{r}
 # using multivariate linear regression to calculate the completion rate for international students
 lm_NRAcompletion <- lm(formula_completionrate, data = univ_train2)
 summary(lm_NRAcompletion)
-
 # do the testing with the prediction model
 accepted_ind3 <- predict(lm_NRAcompletion, interval="prediction", newdata = univ_test2)
 
