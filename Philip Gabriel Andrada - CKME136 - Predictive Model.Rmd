@@ -1,7 +1,7 @@
 ---
 title: "US Research University Prediction Model"
 author: "Philip Gabriel Andrada"
-date: "November 15, 2016"
+date: "November 18, 2016"
 output: pdf_document
 ---
 
@@ -294,13 +294,20 @@ plot(perf1, lty = 1)
 # Now we check on what acceptable ways we could do for regression
 # doing single decision tree
 model_dtree1 <- rpart(formula_ISAcceptance, method="anova",data = univ_train)
+summary(model_dtree1)
+plot(model_dtree1, uniform = TRUE, main = "Single Decision Tree  of\nUS Research University Prediciton Model")
+text(model_dtree1, use.n = TRUE, cex = .8)
+
 pred_dtree1 <- predict(model_dtree1, newdata = univ_test)
-accu1 = abs(pred_dtree1 - univ_test$ACCEPTED) < 0.5
-frac1 = sum(accu1)/length(accu1)
+accu1 <- abs(pred_dtree1 - univ_test$ACCEPTED) < 0.5
+frac1 <- sum(accu1)/length(accu1)
 print(frac1)
 
 # doing random forest
 model_forest1 <- randomForest(formula_ISAcceptance, data = univ_train)
+summary(model_forest1)
+varImpPlot(model_forest1, main = "Variable Importance Plot for Random Forest\nof US Research University Prediciton Model")
+
 pred_forest1 <- predict(model_forest1, newdata = univ_test)
 accu2 <- abs(pred_forest1 - univ_test$ACCEPTED) < 0.5
 frac2 <- sum(accu2)/length(accu2)
@@ -308,6 +315,8 @@ print(frac2)
 
 # doing support vector machine
 model_svm1 <- svm(formula_ISAcceptance, data = univ_train)
+summary(model_svm1)
+
 pred_svm1 <- predict(model_svm1, newdata = univ_test)
 accu3 <- abs(pred_svm1 - univ_test$ACCEPTED) < 0.5
 frac3 <- sum(accu3)/length(accu3)
@@ -315,6 +324,10 @@ print(frac3)
 
 # doing simple tree
 model_tree1 <- tree(formula_ISAcceptance, data = univ_train)
+summary(model_tree1)
+plot(model_tree1, main = "Simple Tree of\nUS Research University Prediciton Model")
+text(model_tree1)
+
 pred_tree1 <- predict(model_tree1, newdata = univ_test)
 accu4 <- abs(pred_tree1 - univ_test$ACCEPTED) < 0.5
 frac4 <- sum(accu4)/length(accu4)
@@ -322,6 +335,9 @@ print(frac4)
 
 # doing conditional inference tree
 model_party1 <- ctree(formula_ISAcceptance, data = univ_train)
+summary(model_party1)
+plot(model_party1, main = "Conditional Inference Tree of\nUS Research University Prediciton Model")
+
 pred_party1 <- predict(model_party1, newdata = univ_test)
 accu5 <- abs(pred_party1 - univ_test$ACCEPTED) < 0.5
 frac5 <- sum(accu5)/length(accu5)
@@ -362,6 +378,8 @@ plot(perf2, lty = 1)
 # Now we check on what acceptable ways we could do for regression
 # doing single decision tree
 model_dtree2 <- rpart(formula_ISSciAcceptance, method="anova",data = univ_train)
+summary(model_dtree2)
+
 pred_dtree2 <- predict(model_dtree2, newdata = univ_test)
 accu6 <- abs(pred_dtree2 - univ_test$ACCEPTED) < 0.5
 frac6 <- sum(accu6)/length(accu6)
@@ -369,6 +387,8 @@ print(frac6)
 
 # doing random forest
 model_forest2 <- randomForest(formula_ISSciAcceptance, data = univ_train)
+summary(model_forest2)
+
 pred_forest2 <- predict(model_forest2, newdata = univ_test)
 accu7 <- abs(pred_forest2 - univ_test$ACCEPTED) < 0.5
 frac7 <- sum(accu7)/length(accu7)
@@ -376,6 +396,8 @@ print(frac7)
 
 # doing support vector machine
 model_svm2 <- svm(formula_ISSciAcceptance, data = univ_train)
+summary(model_svm2)
+
 pred_svm2 <- predict(model_svm2, newdata = univ_test)
 accu8 <- abs(pred_svm2 - univ_test$ACCEPTED) < 0.5
 frac8 <- sum(accu8)/length(accu8)
@@ -383,6 +405,8 @@ print(frac8)
 
 # doing simple tree
 model_tree2 <- tree(formula_ISSciAcceptance, data = univ_train)
+summary(model_tree2)
+
 pred_tree2 <- predict(model_tree2, newdata = univ_test)
 accu9 <- abs(pred_tree2 - univ_test$ACCEPTED) < 0.5
 frac9 <- sum(accu9)/length(accu9)
@@ -390,6 +414,8 @@ print(frac9)
 
 # doing conditional inference tree
 model_party2 <- ctree(formula_ISSciAcceptance, data = univ_train)
+summary(model_party2)
+
 pred_party2 <- predict(model_party2, newdata = univ_test)
 accu10 <- abs(pred_party2 - univ_test$ACCEPTED) < 0.5
 frac10 <- sum(accu10)/length(accu10)
@@ -494,6 +520,10 @@ table(rel_change<0.25)["TRUE"] / nrow(univ_test2)
 # Now we check on what acceptable ways we could do for regression
 # Doing single decision tree
 model_dtree3 <- rpart(formula_completionrate, method="anova",data = univ_train2)
+summary(model_dtree3)
+plot(model_dtree3, uniform = TRUE, main = "Single Decision Tree  of\nUS Research University Completion Rate Prediction Model")
+text(model_dtree3, use.n = TRUE, cex = .8)
+
 pred_dtree3 <- predict(model_dtree3, newdata = univ_test2)
 accu11 <- abs(pred_dtree3 - univ_test2$C150_4_NRA) < 0.25
 frac11 <- sum(accu11)/length(accu11)
@@ -501,6 +531,9 @@ print(frac11)
 
 # Doing random forest
 model_forest3 <- randomForest(formula_completionrate, data = univ_train2)
+summary(model_forest3)
+varImpPlot(model_forest3, main = "Variable Importance Plot for Random Forest of\nUS Research University Completion Rate Prediciton Model")
+
 pred_forest3 <- predict(model_forest3, newdata = univ_test2)
 accu12 <- abs(pred_forest3 - univ_test2$C150_4_NRA) < 0.25
 frac12 <- sum(accu12)/length(accu12)
@@ -508,6 +541,8 @@ print(frac12)
 
 # Doing support vector machine
 model_svm3 <- svm(formula_completionrate, data = univ_train2)
+summary(model_svm3)
+
 pred_svm3 <- predict(model_svm3, newdata = univ_test2)
 accu13 <- abs(pred_svm3 - univ_test2$C150_4_NRA) < 0.25
 frac13 <- sum(accu13)/length(accu13)
@@ -515,6 +550,9 @@ print(frac13)
 
 # doing simple tree
 model_tree3 <- tree(formula_completionrate, data = univ_train2)
+plot(model_tree3, main = "Simple Tree of US Research\nUniversity Completion Rate Prediciton Model")
+text(model_tree3)
+
 pred_tree3 <- predict(model_tree3, newdata = univ_test2)
 accu14 <- abs(pred_tree3 - univ_test2$C150_4_NRA) < 0.25
 frac14 <- sum(accu14)/length(accu14)
@@ -522,6 +560,9 @@ print(frac14)
 
 # doing conditional inference tree
 model_party3 <- ctree(formula_completionrate, data = univ_train2)
+summary(model_party3)
+plot(model_party3, main = "Conditional Inference Tree of US Research\nUniversity Completion Rate Prediciton Model")
+
 pred_party3 <- predict(model_party3, newdata = univ_test2)
 accu15 <- abs(pred_party3 - univ_test2$C150_4_NRA) < 0.25
 frac15 <- sum(accu15)/length(accu15)
