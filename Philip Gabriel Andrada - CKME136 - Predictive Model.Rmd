@@ -178,7 +178,7 @@ plot(usunivfilter$SAT_AVG_ALL, usunivfilter$ACCEPTED, main="SAT Average Grades v
 plot(usunivfilter$ADM_RATE_ALL, usunivfilter$ACCEPTED, main="Admission Rates vs. \n Acceptance to Research Universities (AY2010-2015)", xlab="Admission Rates (%)", ylab="Accepted (1 or 0)")
 
 #Correlation between admission rate for research universities and program completion rate
-plot(usresearchuniv$SAT_AVG_ALL, usresearchuniv$C150_4, main="SAT Average vs. Program Completion Rate \n for Research Universities (AY2010-2015)", xlab="Admission Rate (%)", ylab="Completion Rate (%)")
+plot(usresearchuniv$SAT_AVG_ALL, usresearchuniv$C150_4, main="SAT Average vs. Program Completion Rate \n for Research Universities (AY2010-2015)", xlab="SAT Average", ylab="Completion Rate (%)")
 
 #Correlation coefficient between admission rate and completion rate
 cor(usresearchuniv$SAT_AVG_ALL, usresearchuniv$C150_4, method = "pearson")
@@ -295,7 +295,7 @@ plot(perf1, lty = 1)
 # doing single decision tree
 model_dtree1 <- rpart(formula_ISAcceptance, method="anova",data = univ_train)
 summary(model_dtree1)
-plot(model_dtree1, uniform = TRUE, main = "Single Decision Tree  of\nUS Research University Prediciton Model")
+plot(model_dtree1, uniform = TRUE, main = "Single Decision Tree  of\nUS Research University Prediction Model")
 text(model_dtree1, use.n = TRUE, cex = .8)
 
 pred_dtree1 <- predict(model_dtree1, newdata = univ_test)
@@ -306,7 +306,7 @@ print(frac1)
 # doing random forest
 model_forest1 <- randomForest(formula_ISAcceptance, data = univ_train)
 summary(model_forest1)
-varImpPlot(model_forest1, main = "Variable Importance Plot for Random Forest\nof US Research University Prediciton Model")
+varImpPlot(model_forest1, main = "Variable Importance Plot for Random Forest\nof US Research University Prediction Model")
 
 pred_forest1 <- predict(model_forest1, newdata = univ_test)
 accu2 <- abs(pred_forest1 - univ_test$ACCEPTED) < 0.5
@@ -325,7 +325,7 @@ print(frac3)
 # doing simple tree
 model_tree1 <- tree(formula_ISAcceptance, data = univ_train)
 summary(model_tree1)
-plot(model_tree1, main = "Simple Tree of\nUS Research University Prediciton Model")
+plot(model_tree1, main = "Simple Tree of\nUS Research University Prediction Model")
 text(model_tree1)
 
 pred_tree1 <- predict(model_tree1, newdata = univ_test)
@@ -336,7 +336,7 @@ print(frac4)
 # doing conditional inference tree
 model_party1 <- ctree(formula_ISAcceptance, data = univ_train)
 summary(model_party1)
-plot(model_party1, main = "Conditional Inference Tree of\nUS Research University Prediciton Model")
+plot(model_party1, main = "Conditional Inference Tree of\nUS Research University Prediction Model")
 
 pred_party1 <- predict(model_party1, newdata = univ_test)
 accu5 <- abs(pred_party1 - univ_test$ACCEPTED) < 0.5
@@ -532,7 +532,7 @@ print(frac11)
 # Doing random forest
 model_forest3 <- randomForest(formula_completionrate, data = univ_train2)
 summary(model_forest3)
-varImpPlot(model_forest3, main = "Variable Importance Plot for Random Forest of\nUS Research University Completion Rate Prediciton Model")
+varImpPlot(model_forest3, main = "Variable Importance Plot for Random Forest of\nUS Research University Completion Rate Prediction Model")
 
 pred_forest3 <- predict(model_forest3, newdata = univ_test2)
 accu12 <- abs(pred_forest3 - univ_test2$C150_4_NRA) < 0.25
@@ -550,7 +550,7 @@ print(frac13)
 
 # doing simple tree
 model_tree3 <- tree(formula_completionrate, data = univ_train2)
-plot(model_tree3, main = "Simple Tree of US Research\nUniversity Completion Rate Prediciton Model")
+plot(model_tree3, main = "Simple Tree of US Research\nUniversity Completion Rate Prediction Model")
 text(model_tree3)
 
 pred_tree3 <- predict(model_tree3, newdata = univ_test2)
@@ -561,7 +561,7 @@ print(frac14)
 # doing conditional inference tree
 model_party3 <- ctree(formula_completionrate, data = univ_train2)
 summary(model_party3)
-plot(model_party3, main = "Conditional Inference Tree of US Research\nUniversity Completion Rate Prediciton Model")
+plot(model_party3, main = "Conditional Inference Tree of US Research\nUniversity Completion Rate Prediction Model")
 
 pred_party3 <- predict(model_party3, newdata = univ_test2)
 accu15 <- abs(pred_party3 - univ_test2$C150_4_NRA) < 0.25
